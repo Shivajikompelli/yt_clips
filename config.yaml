@@ -1,0 +1,24 @@
+# clipper configuration - all values read here, sane defaults in pipeline/utils.py
+
+whisper_model: base          # faster-whisper model size: tiny|base|small|medium|large-v3
+max_input_minutes: 60        # reject sources longer than this
+clips_to_generate: 5
+min_clip_seconds: 20
+max_clip_seconds: 60
+llm_chunk_minutes: 15        # transcript chunk size fed to the LLM
+llm_max_retries: 3           # for HTTP 429 / transient errors (exponential backoff)
+max_upload_mb: 1000          # Phase 2 API: reject larger uploads
+
+caption_style:
+  font: Arial
+  font_size: 56
+  primary_color: "&H00FFFFFF"        # ASS &HAABBGGRR (white)
+  highlight_color: "&H0000E5FF"      # ASS &HAABBGGRR (yellow) - currently spoken word
+  outline: 3
+  position: bottom                   # lower third
+
+output_resolution: 1080x1920
+
+# When true (default) the downloaded/copied source video is deleted after all
+# clips are rendered. Transcripts and clips.json stay cached in the run dir.
+delete_source_after_render: true
