@@ -32,6 +32,7 @@ class ProjectOut(BaseModel):
     stage: str | None = None
     progress: int
     error: str | None = None
+    num_clips: int | None = None
     created_at: str
     updated_at: str
 

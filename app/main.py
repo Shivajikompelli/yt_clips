@@ -11,7 +11,7 @@ from typing import AsyncIterator
 
 from fastapi import FastAPI, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from dotenv import load_dotenv
@@ -29,6 +29,16 @@ from .models import (
     RetryOut,
     URLRequest,
 )
+
+
+def _project_out(p: dict) -> ProjectOut:
+    return ProjectOut(
+        id=p["id"], title=p["title"], source_type=p["source_type"],
+        source_value=p["source_value"], status=p["status"], stage=p.get("stage"),
+        progress=p.get("progress", 0), error=p.get("error"),
+        num_clips=p.get("num_clips"), created_at=p.get("created_at", ""),
+        updated_at=p.get("updated_at", ""),
+    )
 from .worker import Worker
 
 log = logging.getLogger("clipper.app.main")
@@ -78,6 +88,12 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="clipper API", version="2.0.0", lifespan=lifespan)
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def index() -> FileResponse:
+    """Serve the Phase 3 UI (hash routing handles the pages)."""
+    return FileResponse(ROOT / "static" / "index.html", media_type="text/html")
 
 # Phase 3 UI will live here; mounted now so the path exists from day one
 app.mount("/static", StaticFiles(directory=str(ROOT / "static"), check_dir=False), name="static")
@@ -261,14 +277,15 @@ async def _create_from_upload(upload: UploadFile) -> CreatedOut:
 
 @app.get("/projects", response_model=list[ProjectOut])
 def list_projects() -> list[ProjectOut]:
-    return [ProjectOut(**p) for p in db.list_projects()]
+    return [_project_out(p) for p in db.list_projects()]
 
 
 @app.get("/projects/{pid}", response_model=ProjectDetailOut)
 def get_project(pid: str) -> ProjectDetailOut:
     project = _require_project(pid)
     clips = [_clip_out(c) for c in db.clips_for_project(pid)]
-    return ProjectDetailOut(**project, clips=clips)
+    out = _project_out(project)
+    return ProjectDetailOut(**out.model_dump(), clips=clips)
 
 
 def _clip_out(clip: dict) -> ClipOut:

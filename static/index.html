@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Cpath d='M12 9.5v13l11-6.5z' fill='%23fff'/%3E%3C/svg%3E">
+  <title>clipper</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#/">clipper<span class="brand-dot">.</span></a>
+    <span id="health" class="health" title="server health">
+      <span id="health-dot" class="dot dot-unknown" aria-hidden="true"></span>
+      <span id="health-label" class="health-label">checking…</span>
+    </span>
+  </header>
+
+  <main id="app" class="app">
+    <!-- pages are rendered here by app.js (hash router) -->
+    <div class="skeleton" aria-hidden="true"></div>
+  </main>
+
+  <footer class="footer">
+    <span>clipper — local video → vertical clips</span>
+  </footer>
+
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="false"></div>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

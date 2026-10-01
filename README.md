@@ -95,6 +95,36 @@ Files: SQLite DB at `storage/clipper.db`, uploads in `storage/uploads/` (stored 
 file paths or `file://` URLs (stored as `source_type: "local"`; local files
 must exist and have an allowed extension).
 
+## Phase 3: Web UI
+
+The API ships with a zero-dependency web UI (plain HTML/CSS/vanilla JS, works
+offline — no frameworks, no npm, no CDN). It is served by the same app:
+
+```bash
+uvicorn app.main:app --port 8000
+# then open http://127.0.0.1:8000/
+```
+
+- **Home (`#/`)** — create a project from a link/local path or a file upload
+  (with upload progress), plus the live project list. The list auto-refreshes
+  every 3s while any project is still processing and pauses when the tab is
+  hidden. Failed projects can be retried; finished ones deleted (with a
+  confirmation that surfaces the API's 409 wording if the job is mid-flight).
+- **Project page (`#/project/<id>`)** — a stage tracker
+  (queued → downloading → transcribing → analyzing → rendering → ready) with
+  live progress polling every 2s until the job finishes, then a vertical
+  (9:16) clip grid: each card has a seekable `<video>` preview, score badge,
+  `m:ss → m:ss` range with duration, a collapsible LLM rationale, and a
+  download button. Playing one clip pauses the others; "Download all" fetches
+  them sequentially.
+
+The UI is security-conscious by construction: all server data is inserted via
+`textContent`/`createElement` (never `innerHTML`), uploads are validated
+client-side (extension, empty file, 1000 MB limit) with server errors (422/
+413) shown inline, and status updates use `aria-live` regions. Light/dark
+follows `prefers-color-scheme`; layout is responsive from 375px phones to
+desktop. Total payload is ~40 KB of static assets.
+
 ## Usage
 
 ```bash
@@ -213,7 +243,7 @@ your key/quota, or lower `llm_chunk_minutes` so chunks are smaller.
 ## Development
 
 ```bash
-python -m pytest tests/ -q     # 97 tests, LLM + pipeline mocked in API tests, no network
+python -m pytest tests/ -q     # 108 tests, LLM + pipeline mocked in API tests, no network
 ```
 
 Layout:
@@ -231,14 +261,14 @@ pipeline/
 prompts/
   highlight_prompt.txt     the LLM prompt (edit freely)
 app/                       Phase 2 API
-  main.py                  FastAPI routes + lifespan (init db, stale-job recovery)
+  main.py                  FastAPI routes + lifespan (init db, stale-job recovery, serves the UI)
   db.py                    sqlite3 persistence (storage/clipper.db)
   models.py                pydantic schemas
   worker.py                single-worker queue (one job at a time)
 storage/
   uploads/                 uploaded videos
   projects/<id>/           per-project working files and clips
-static/                    empty for now (UI comes in Phase 3)
+static/                    Phase 3 web UI (index.html, styles.css, app.js — no build step)
 workdir/<run_id>/          per-run cache (CLI)
 output/                    final clips (CLI)
 tests/                     pytest suite

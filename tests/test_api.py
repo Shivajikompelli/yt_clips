@@ -109,6 +109,11 @@ class TestCreateProject:
         assert row["source_type"] == "url"
         assert row["title"] == "T"
         assert row["num_clips"] == 2
+        # num_clips is exposed on both list and detail responses (Phase 3 UI)
+        listed = client.get("/projects").json()
+        assert listed[0]["num_clips"] == 2
+        detail = client.get(f"/projects/{resp.json()['id']}").json()
+        assert detail["num_clips"] == 2
 
     def test_upload_accepted(self, client, env):
         resp = client.post(
@@ -223,6 +228,9 @@ class TestLifecycle:
         assert len(detail["clips"]) == 1
         clip = detail["clips"][0]
         assert clip["title"] == "Fake Clip"
+        # num_clips echoes the request; None when unspecified (the UI applies
+        # the config default of 5 client-side)
+        assert detail["num_clips"] is None
         # server paths must not leak; route URLs are exposed instead
         assert "file_path" not in clip
         assert clip["download_url"] == f"/clips/{clip['id']}/download"
@@ -481,3 +489,22 @@ class TestStaleRecovery:
         db.mark_stale_failed()
         assert db.get_project(ready["id"])["status"] == "ready"
         assert db.get_project(failed["id"])["status"] == "failed"
+
+
+# ---------------------------------------------------------------- phase 3 UI
+
+
+class TestStaticUi:
+    def test_root_serves_index_html(self, client):
+        resp = client.get("/")
+        assert resp.status_code == 200
+        assert resp.headers["content-type"].startswith("text/html")
+        assert b"<!doctype html>" in resp.content.lower()
+        assert b'app.js' in resp.content  # the UI entry point is wired up
+
+    def test_static_assets_served(self, client):
+        for path, needle in (("/static/styles.css", "text/css"),
+                             ("/static/app.js", "javascript")):
+            resp = client.get(path)
+            assert resp.status_code == 200, path
+            assert needle in resp.headers["content-type"], path
